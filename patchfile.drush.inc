@@ -32,6 +32,15 @@ function patchfile_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
     'aliases' => array('pp'),
   );
+  $items['patch-all-projects'] = array(
+    'description' => 'Attempts to patch all projects in a given patchfile.',
+    'arguments' => array(
+      'patchfile' => 'Location of the patch make file.',
+    ),
+    'required-arguments' => 1,
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
+    'aliases' => array('pap'),
+  );
   $items['patch-add'] = array(
     'description' => 'Add a new patch to the make file.',
     'arguments' => array(
@@ -108,6 +117,28 @@ function drush_patchfile_patch_project($project_name) {
   }
 
   return _drush_patchfile_project_apply_patches($project_name, $patches, $project_directory);
+}
+
+/**
+ * Command callback for drush patch-all-projects.
+ *
+ * @param $patchfile
+ *   Location of the patch make file.
+ */
+function drush_patchfile_patch_all_projects($patchfile) {
+  $projects = drush_patchfile_get_patched_projects($patchfile);
+
+  if (empty($projects)) {
+    return drush_print(dt('No patches found.'));
+  }
+
+  foreach($projects as $project_name => $patches) {
+    $project_directory = drush_patchfile_project_get_directory($project_name);
+    if (empty($project_directory)) {
+      return drush_set_error('DRUSH_PROJECT_NOT_FOUND', dt("The project @project was not found.", array('@project' => $project_name)));
+    }
+    _drush_patchfile_project_apply_patches($project_name, $patches['patch'], $project_directory);
+  }
 }
 
 /**
